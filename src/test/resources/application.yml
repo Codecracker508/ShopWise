@@ -1,0 +1,13 @@
+spring:
+  profiles:
+    active: test
+  config:
+    import: optional:configserver:https://nodal-formula-425110-h7.uc.r.appspot.com
+  jpa:
+    defer-datasource-initialization: true
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: https://naming-server.el.r.appspot.com/eureka
+  instance:
+    prefer-ip-address: true
