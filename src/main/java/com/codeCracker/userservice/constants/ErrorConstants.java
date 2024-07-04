@@ -1,16 +1,21 @@
 package com.codeCracker.userservice.constants;
 
-public class ErrorConstants {
-    public static class ErrorCodes {
-        public static final String DEFAULT_ERROR_CODE = "100000";
-        public static final String VALIDATION_ERROR = "100001";
-        public static final String USER_NOT_FOUND_ERROR = "100002";
-
-        public static final String INVALID_OTP = "100003";
+public interface ErrorConstants {
+    interface ErrorCodes {
+        String DEFAULT_ERROR_CODE = "100000";
+        String VALIDATION_ERROR = "100001";
+        String USER_NOT_FOUND_ERROR = "100002";
+        String INVALID_OTP = "100003";
+        String USER_NOT_VERIFIED = "100004";
     }
 
-    public static class ReasonCodes {
-        public static final String INVALID_INPUT_VALUE = "INVALID_INPUT_VALUE";
-        public static final String INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR";
+    interface ReasonCodes {
+        String INVALID_INPUT_VALUE = "INVALID_INPUT_VALUE";
+        String INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR";
+        String UNAUTHORIZED = "INVALID_ACCESS";
+    }
+
+    interface Description {
+        String USER_NOT_VERIFIED = "The provided user is not verified. Please verify the user.";
     }
 }

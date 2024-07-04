@@ -1,18 +1,21 @@
 package com.codeCracker.userservice.service;
 
-import com.codeCracker.userservice.constants.ApplicationTestConstants;
 import com.codeCracker.userservice.converter.UserConverter;
 import com.codeCracker.userservice.dto.model.MobileNumber;
+import com.codeCracker.userservice.dto.model.Name;
 import com.codeCracker.userservice.dto.model.OTPResponse;
 import com.codeCracker.userservice.dto.model.UserDetailsDto;
 import com.codeCracker.userservice.dto.request.CreateUser;
 import com.codeCracker.userservice.dto.request.VerifyUser;
 import com.codeCracker.userservice.dto.response.UserRegistration;
+import com.codeCracker.userservice.dto.response.UserUpdateResponse;
 import com.codeCracker.userservice.dto.response.UserVerification;
 import com.codeCracker.userservice.entity.UserTb;
 import com.codeCracker.userservice.exceptions.InvalidOtpException;
 import com.codeCracker.userservice.exceptions.UserNotFoundException;
+import com.codeCracker.userservice.exceptions.UserNotVerifiedException;
 import com.codeCracker.userservice.repo.UserRepository;
+import com.codeCracker.userservice.service.UserAuthService;
 import com.codeCracker.userservice.service.impl.UserRegistrationServiceImpl;
 import com.codeCracker.userservice.util.JwtUtil;
 import com.codeCracker.userservice.util.OTPGenerator;
@@ -21,22 +24,20 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
-import static com.codeCracker.userservice.constants.ApplicationConstants.OTP_ERROR;
-import static com.codeCracker.userservice.constants.ApplicationConstants.OTP_SUCCESS;
+import static com.codeCracker.userservice.constants.ApplicationConstants.*;
+import static com.codeCracker.userservice.constants.ApplicationTestConstants.SAMPLE_UUID;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest
-public class UserRegistrationServiceTest {
+class UserRegistrationServiceTest {
 
     @Mock
     private UserConverter userConverter;
@@ -58,82 +59,81 @@ public class UserRegistrationServiceTest {
 
     @InjectMocks
     private UserRegistrationServiceImpl userRegistrationService;
-    
-    String otp = new Random().ints(100000,999999).toString();
-    MobileNumber mobileNumber = new MobileNumber("+91", "1234567890");
+
+    private UUID sampleUUID;
+    private UserTb userTb;
+    private UserDetailsDto userDetailsDto;
+    private CreateUser createUser;
+    private VerifyUser verifyUser;
+    private OTPResponse otpResponse;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
+        Name name = new Name("John", "M", "Doe");
+        MobileNumber mobileNumber = new MobileNumber("+1", "1234567890");
+        sampleUUID = UUID.fromString(SAMPLE_UUID);
+        userTb = new UserTb(sampleUUID, name, mobileNumber, true);
+        userTb.setUserId(sampleUUID);
+
+        createUser = new CreateUser(name, mobileNumber);
+
+        verifyUser = VerifyUser.builder()
+                .userId(sampleUUID.toString())
+                .otp("123456")
+                .mobile(mobileNumber)
+                .build();
+
+        otpResponse = OTPResponse.builder()
+                .otp("123456")
+                .otpMessage(OTP_SUCCESS)
+                .build();
+
+        userDetailsDto = new UserDetailsDto(sampleUUID.toString(), name, mobileNumber);
     }
 
     @Test
-    public void testUserRegistration() {
-        CreateUser createUser = new CreateUser();
-        createUser.setMobile(mobileNumber);
-
-        UserTb userTb = new UserTb();
-        userTb.setUserId(UUID.randomUUID());
-
-        OTPResponse otpResponse = new OTPResponse();
-        otpResponse.setOtp(otp);
-        otpResponse.setOtpMessage("OTP sent successfully");
-
+    void testUserRegistration_Success() {
         when(otpGenerator.generateOtp(anyString())).thenReturn(otpResponse);
-        when(userConverter.convertUserToEntity(any(CreateUser.class))).thenReturn(userTb);
+        when(userConverter.convertUserToEntity(createUser)).thenReturn(userTb);
         when(userRepository.save(any(UserTb.class))).thenReturn(userTb);
 
         UserRegistration userRegistration = userRegistrationService.userRegistration(createUser);
 
-        assertEquals(otp, userRegistration.getOtp());
-        assertEquals("OTP sent successfully", userRegistration.getMessage());
-        assertNotNull(userRegistration.getUserId());
+        assertNotNull(userRegistration);
+        assertEquals(otpResponse.getOtp(), userRegistration.getOtp());
+        assertEquals(otpResponse.getOtpMessage(), userRegistration.getMessage());
+        assertEquals(sampleUUID.toString(), userRegistration.getUserId());
     }
 
     @Test
-    public void testUserRegistrationOtpError() {
-        CreateUser createUser = new CreateUser();
-        createUser.setMobile(mobileNumber);
-
+    void testUserRegistration_OtpGenerationError() {
         when(otpGenerator.generateOtp(anyString())).thenThrow(new RuntimeException("OTP generation error"));
 
         UserRegistration userRegistration = userRegistrationService.userRegistration(createUser);
 
+        assertNotNull(userRegistration);
         assertNull(userRegistration.getUserId());
         assertEquals(OTP_ERROR, userRegistration.getMessage());
     }
 
     @Test
-    public void testUserVerification() throws Exception {
-        VerifyUser verifyUser = new VerifyUser();
-        verifyUser.setUserId(ApplicationTestConstants.SAMPLE_UUID);
-        verifyUser.setOtp(otp);
-        verifyUser.setMobile(mobileNumber);
-
-        UserTb userTb = new UserTb();
-        userTb.setUserId(UUID.randomUUID());
-
+    void testUserVerification_Success() throws Exception {
         when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userTb));
-        when(otpGenerator.getCacheOtp(anyString())).thenReturn(otp);
-        when(userAuthService.loadUserByUsername(anyString())).thenReturn(new User(ApplicationTestConstants.SAMPLE_UUID, "password", new ArrayList<>()));
-        when(jwtUtil.generateToken(any(UserDetails.class))).thenReturn("jwt-token");
+        when(otpGenerator.getCacheOtp(anyString())).thenReturn("123456");
+        doNothing().when(otpGenerator).clearOtp(anyString());
+        when(userAuthService.loadUserByUsername(anyString())).thenReturn(mock(UserDetails.class));
+        when(jwtUtil.generateToken(any(UserDetails.class))).thenReturn("token");
 
         UserVerification userVerification = userRegistrationService.userVerification(verifyUser);
 
-        assertEquals("jwt-token", userVerification.getAccessToken());
+        assertNotNull(userVerification);
         assertEquals(OTP_SUCCESS, userVerification.getMessage());
+        assertEquals("token", userVerification.getAccessToken());
     }
 
     @Test
-    public void testUserVerificationInvalidOtp() {
-        VerifyUser verifyUser = new VerifyUser();
-        verifyUser.setUserId(ApplicationTestConstants.SAMPLE_UUID);
-        verifyUser.setOtp(otp);
-        verifyUser.setMobile(mobileNumber);
-
-        UserTb userTb = new UserTb();
-        userTb.setUserId(UUID.randomUUID());
-
+    void testUserVerification_InvalidOtp() throws Exception {
         when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userTb));
         when(otpGenerator.getCacheOtp(anyString())).thenReturn("654321");
 
@@ -143,12 +143,7 @@ public class UserRegistrationServiceTest {
     }
 
     @Test
-    public void testUserVerificationUserNotFound() {
-        VerifyUser verifyUser = new VerifyUser();
-        verifyUser.setUserId(ApplicationTestConstants.SAMPLE_UUID);
-        verifyUser.setOtp(otp);
-        verifyUser.setMobile(new MobileNumber("+91", "1234567890"));
-
+    void testUserVerification_UserNotFound() {
         when(userRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
 
         assertThrows(UserNotFoundException.class, () -> {
@@ -157,15 +152,87 @@ public class UserRegistrationServiceTest {
     }
 
     @Test
-    public void testGetAllUsers() {
-        List<UserTb> users = new ArrayList<>();
-        users.add(new UserTb());
+    void testGetAllUsers() {
+        when(userRepository.findAll()).thenReturn(List.of(userTb));
+        when(userConverter.userToUserDetails(any(UserTb.class))).thenReturn(userDetailsDto);
 
-        when(userRepository.findAll()).thenReturn(users);
-        when(userConverter.userToUserDetails(any(UserTb.class))).thenReturn(new UserDetailsDto());
+        List<UserDetailsDto> allUsers = userRegistrationService.getAllUsers();
 
-        List<UserDetailsDto> userDetailsDtos = userRegistrationService.getAllUsers();
+        assertNotNull(allUsers);
+        assertEquals(1, allUsers.size());
+        assertEquals(userDetailsDto, allUsers.get(0));
+    }
 
-        assertEquals(1, userDetailsDtos.size());
+    @Test
+    void testGetUser_Success() throws UserNotFoundException {
+        when(jwtUtil.extractUsername(anyString())).thenReturn(sampleUUID.toString());
+        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userTb));
+        when(userConverter.userToUserDetails(any(UserTb.class))).thenReturn(userDetailsDto);
+
+        UserDetailsDto user = userRegistrationService.getUser("Bearer token");
+
+        assertNotNull(user);
+        assertEquals(userDetailsDto, user);
+    }
+
+    @Test
+    void testGetUser_UserNotFound() {
+        when(jwtUtil.extractUsername(anyString())).thenReturn(sampleUUID.toString());
+        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> {
+            userRegistrationService.getUser("Bearer token");
+        });
+    }
+
+    @Test
+    void testUpdateUser_Success() throws UserNotVerifiedException, UserNotFoundException {
+        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userTb));
+        when(userConverter.userDtoToUserTb(any(UserDetailsDto.class), any(UserTb.class))).thenReturn(userTb);
+
+
+        UserUpdateResponse userUpdateResponse = userRegistrationService.updateUser(userDetailsDto);
+
+        assertNotNull(userUpdateResponse);
+        assertEquals(userDetailsDto, userUpdateResponse.getUserDetails());
+        assertEquals(UPDATED_USER, userUpdateResponse.getMessage());
+    }
+
+    @Test
+    void testUpdateUser_UserNotVerified() {
+        UserTb userDetails = userTb;
+        userDetails.setIsAuthenticated(false);
+        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userTb));
+
+        assertThrows(UserNotVerifiedException.class, () -> {
+            userRegistrationService.updateUser(userDetailsDto);
+        });
+    }
+
+    @Test
+    void testUpdateUser_UserNotFound() {
+        when(userRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> {
+            userRegistrationService.updateUser(userDetailsDto);
+        });
+    }
+
+    @Test
+    void testCreateAuthenticationToken_InvalidCredentials() {
+        VerifyUser verifyUser = VerifyUser.builder()
+                .userId("user-id")
+                .otp("123456")
+                .mobile(null)
+                .build();
+
+        doThrow(new BadCredentialsException("Invalid credentials"))
+                .when(authenticationManager).authenticate(any());
+
+        Exception exception = assertThrows(Exception.class, () -> {
+            userRegistrationService.createAuthenticationToken(verifyUser);
+        });
+
+        assertEquals("Incorrect username or password", exception.getMessage());
     }
 }

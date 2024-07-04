@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.text.DecimalFormat;
 import java.util.Random;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static com.codeCracker.userservice.constants.ApplicationConstants.EXPIRE_MIN;
@@ -22,8 +23,8 @@ public class OTPGenerator {
                 .expireAfterWrite(EXPIRE_MIN, TimeUnit.MINUTES)
                 .build(new CacheLoader<>() {
                     @Override
-                    public String load(String s) {
-                        return "";
+                    public String load(String s) throws Exception {
+                        throw new Exception("OTP not found");
                     }
                 });
     }
@@ -40,11 +41,11 @@ public class OTPGenerator {
     }
 
     //get saved otp
-    public String getCacheOtp(String key) {
+    public String getCacheOtp(String key) throws Exception {
         try {
             return otpCache.get(key);
-        } catch (Exception e) {
-            return "";
+        } catch (ExecutionException e) {
+            throw new Exception("OTP not found", e);
         }
     }
 

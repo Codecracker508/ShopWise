@@ -1,9 +1,11 @@
 package com.codeCracker.userservice.globalExceptions;
 
 import com.codeCracker.userservice.constants.ApplicationTestConstants;
+import com.codeCracker.userservice.constants.ErrorConstants;
 import com.codeCracker.userservice.dto.model.ShopWiseDefaultError;
 import com.codeCracker.userservice.exceptions.InvalidOtpException;
 import com.codeCracker.userservice.exceptions.UserNotFoundException;
+import com.codeCracker.userservice.exceptions.UserNotVerifiedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -100,5 +102,17 @@ public class GlobalExceptionHandlerTest {
         assertEquals(INVALID_INPUT_VALUE, error.getReasonCode());
         assertEquals(OTP_EXPIRY, error.getDescription());
         assertEquals("otp", error.getSource());
+    }
+
+    @Test
+    public void testUserNotVerifiedException() {
+        UserNotVerifiedException userNotVerifiedException = new UserNotVerifiedException();
+
+        ResponseEntity<ShopWiseDefaultError> response =
+                globalExceptionHandler.userNotVerifiedException(userNotVerifiedException);
+        ShopWiseDefaultError defaultError = response.getBody();
+        assertNotNull(defaultError);
+        assertEquals(defaultError.getDescription(), ErrorConstants.Description.USER_NOT_VERIFIED);
+        assertEquals(defaultError.getErrorCode(), USER_NOT_VERIFIED);
     }
 }

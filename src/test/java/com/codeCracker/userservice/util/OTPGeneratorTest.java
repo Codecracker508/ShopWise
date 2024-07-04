@@ -19,36 +19,48 @@ public class OTPGeneratorTest {
     }
 
     @Test
-    public void testGenerateOtp() {
-        String phoneNo = "1234567890";
-        OTPResponse otpResponse = otpGenerator.generateOtp(phoneNo);
-
-        assertNotNull(otpResponse.getOtp());
-        assertEquals(WELCOME_USER, otpResponse.getOtpMessage());
+    public void testGenerateOtp_validPhoneNumber() {
+        String phoneNumber = "1234567890";
+        OTPResponse response = otpGenerator.generateOtp(phoneNumber);
+        assertNotNull(response);
+        assertEquals(6, response.getOtp().length());
+        assertEquals(WELCOME_USER, response.getOtpMessage());
     }
 
     @Test
-    public void testGetCacheOtp() {
-        String phoneNo = "1234567890";
-        otpGenerator.generateOtp(phoneNo);
-        String cachedOtp = otpGenerator.getCacheOtp(phoneNo);
-
-        assertNotNull(cachedOtp);
-        assertEquals(cachedOtp, otpGenerator.getCacheOtp(phoneNo));
+    public void testGetCacheOtp_validPhoneNumber() throws Exception {
+        String phoneNumber = "1234567890";
+        otpGenerator.generateOtp(phoneNumber);
+        String otp = otpGenerator.getCacheOtp(phoneNumber);
+        assertNotNull(otp);
+        assertEquals(6, otp.length());
     }
 
     @Test
-    public void testClearOtp() {
-        String phoneNo = "1234567890";
-        otpGenerator.generateOtp(phoneNo);
-        otpGenerator.clearOtp(phoneNo);
-
-        assertEquals("", otpGenerator.getCacheOtp(phoneNo));
+    public void testGenerateAndRetrieveMultipleOtps() throws Exception {
+        String phoneNumber1 = "1234567890";
+        String phoneNumber2 = "0987654321";
+        otpGenerator.generateOtp(phoneNumber1);
+        otpGenerator.generateOtp(phoneNumber2);
+        String otp1 = otpGenerator.getCacheOtp(phoneNumber1);
+        String otp2 = otpGenerator.getCacheOtp(phoneNumber2);
+        assertNotNull(otp1);
+        assertNotNull(otp2);
+        assertNotEquals(otp1, otp2);
     }
 
     @Test
-    public void testGetCacheOtpNotFound() {
-        String phoneNo = "1234567890";
-        assertEquals("", otpGenerator.getCacheOtp(phoneNo));
+    public void testClearOtp() throws Exception {
+        String phoneNumber = "1234567890";
+        otpGenerator.generateOtp(phoneNumber);
+        otpGenerator.clearOtp(phoneNumber);
+        Exception exception = assertThrows(Exception.class, () -> otpGenerator.getCacheOtp(phoneNumber));
+        assertNotNull(exception);
+    }
+
+    @Test
+    public void testGetCacheOtp_nonExistentPhoneNumber() {
+        Exception exception = assertThrows(Exception.class, () -> otpGenerator.getCacheOtp("1111111111"));
+        assertNotNull(exception);
     }
 }

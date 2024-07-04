@@ -1,18 +1,19 @@
 package com.codeCracker.userservice.constants;
 
-public class ApplicationConstants {
+public interface ApplicationConstants {
 
-    public static final String WELCOME_USER = "Above OTP is valid for a limited time. Please use it to complete authentication.";
-    public static final String OTP_ERROR = "Error Occurred while generating OTP. Please try again after sometime/check the details you have provided";
-    public static final String OTP_SUCCESS = "Otp verified successfully.";
-    public static final String OTP_EXPIRY = "Otp is either expired or incorrect.";
-    public static final String USER_NOT_FOUND = "Invalid userId. Please verify.";
-    public static final Integer EXPIRE_MIN = 5;
+    String WELCOME_USER = "Above OTP is valid for a limited time. Please use it to complete authentication.";
+    String OTP_ERROR = "Error Occurred while generating OTP. Please try again after sometime/check the details you have provided";
+    String OTP_SUCCESS = "Otp verified successfully.";
+    String OTP_EXPIRY = "Otp is either expired or incorrect.";
+    String USER_NOT_FOUND = "Invalid userId. Please verify.";
+    String UPDATED_USER = "Details Updated successfully";
+    Integer EXPIRE_MIN = 10;
 
-    public static final String DEFAULT_PASSWORD = "P0JvsrJHrt63Hzu";
+    String DEFAULT_PASSWORD = "P0JvsrJHrt63Hzu";
 
-    public static final String SECRET_KEY = "secret";
-    public static final String[] WHITELIST_URLS = {
+    String SECRET_KEY = "secret";
+    String[] WHITELIST_URLS = {
             "/newUser/**",
             "/v2/api-docs",
             "/configuration/ui",
@@ -24,14 +25,15 @@ public class ApplicationConstants {
             "/webjars/**"
     };
 
-    public static class Headers {
-        public static final String AUTHORIZATION = "Authorization";
-        public static final String CUSTOMER_ID = "customer-id";
+    interface Headers {
+        String AUTHORIZATION = "Authorization";
     }
 
-    public static class URLS {
-        public static final String ALL_USERS = "/allUsers";
-        public static final String NEW_USER = "/newUser/create";
-        public static final String VERIFY_USER = "/newUser/verifyUser";
+    interface URLS {
+        String ALL_USERS = "/allUsers";
+        String NEW_USER = "/newUser/create";
+        String VERIFY_USER = "/newUser/verifyUser";
+        String GET_USER = "/profile";
+        String UPDATE_USER = "/profile/update";
     }
 }

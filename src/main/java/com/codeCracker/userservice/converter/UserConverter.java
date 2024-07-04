@@ -18,4 +18,10 @@ public class UserConverter {
     public UserDetailsDto userToUserDetails(UserTb userTb) {
         return new UserDetailsDto(userTb.getUserId().toString(), userTb.getName(), userTb.getMobileNumber());
     }
+
+    public UserTb userDtoToUserTb(UserDetailsDto userDetailsDto, UserTb userTb) {
+        userTb.setName(userDetailsDto.getName());
+        userTb.setMobileNumber(userDetailsDto.getMobileNumber());
+        return userTb;
+    }
 }

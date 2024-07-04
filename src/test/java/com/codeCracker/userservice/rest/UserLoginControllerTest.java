@@ -8,26 +8,32 @@ import com.codeCracker.userservice.dto.model.UserDetailsDto;
 import com.codeCracker.userservice.dto.request.CreateUser;
 import com.codeCracker.userservice.dto.request.VerifyUser;
 import com.codeCracker.userservice.dto.response.UserRegistration;
+import com.codeCracker.userservice.dto.response.UserUpdateResponse;
 import com.codeCracker.userservice.dto.response.UserVerification;
+import com.codeCracker.userservice.exceptions.UserNotFoundException;
+import com.codeCracker.userservice.exceptions.UserNotVerifiedException;
+import com.codeCracker.userservice.globalExceptions.GlobalExceptionHandler;
 import com.codeCracker.userservice.security.SecurityConfig;
 import com.codeCracker.userservice.service.UserAuthService;
 import com.codeCracker.userservice.service.UserRegistrationService;
 import com.codeCracker.userservice.util.JwtRequestFilter;
 import com.codeCracker.userservice.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.impl.DefaultJwtBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Date;
 import java.util.List;
@@ -39,11 +45,11 @@ import static com.codeCracker.userservice.constants.ApplicationTestConstants.SAM
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@ExtendWith(SpringExtension.class)
 @WebMvcTest(UserLoginController.class)
-@ContextConfiguration(classes = {UserLoginController.class, SecurityConfig.class, CustomAuthenticationEntryPoint.class})
+@ContextConfiguration(classes = {UserLoginController.class, SecurityConfig.class, CustomAuthenticationEntryPoint.class, GlobalExceptionHandler.class})
 class UserLoginControllerTest {
 
     VerifyUser verifyUser;
@@ -64,15 +70,12 @@ class UserLoginControllerTest {
     private JwtUtil jwtUtil;
     @MockBean
     private JwtRequestFilter jwtRequestFilter;
+    @InjectMocks
+    private UserLoginController userLoginController;
 
     @BeforeEach
     void setUp() {
         autoCloseable = MockitoAnnotations.openMocks(this);
-
-        // Initialize the real ObjectMapper and ObjectWriter
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
-        ObjectWriter objectWriter = objectMapper.writer().withDefaultPrettyPrinter();
 
         String otp = String.valueOf(new Random().nextInt(899999) + 100000); // Generate a 6-digit OTP
         name = new Name("John", "M", "Gates");
@@ -92,6 +95,9 @@ class UserLoginControllerTest {
                 .otp(otp)
                 .message(WELCOME_USER)
                 .build();
+        mockMvc = MockMvcBuilders.standaloneSetup(userLoginController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     @Test
@@ -100,9 +106,20 @@ class UserLoginControllerTest {
 
         this.mockMvc.perform(post(ApplicationConstants.URLS.NEW_USER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(String.valueOf(createUser)))
-                .andDo(print())
-                .andExpect(status().isOk());
+                        .content(new ObjectMapper().writeValueAsString(createUser)))
+
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void testUserRegistration_InvalidRequest() throws Exception {
+        CreateUser invalidUser = new CreateUser(null, mobileNumber); // Invalid because name is null
+
+        this.mockMvc.perform(post(ApplicationConstants.URLS.NEW_USER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(invalidUser)))
+
+                .andExpect(status().isCreated());
     }
 
     @Test
@@ -111,9 +128,19 @@ class UserLoginControllerTest {
 
         this.mockMvc.perform(post(ApplicationConstants.URLS.VERIFY_USER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(String.valueOf(verifyUser)))
-                .andDo(print())
+                        .content(new ObjectMapper().writeValueAsString(verifyUser)))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void testUserVerification_InvalidOTP() throws Exception {
+        VerifyUser invalidVerifyUser = VerifyUser.builder()
+                .userId(SAMPLE_UUID)
+                .otp("123") // Invalid because OTP is too short
+                .mobile(mobileNumber).build();
+        this.mockMvc.perform(post(ApplicationConstants.URLS.VERIFY_USER)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(invalidVerifyUser))).andExpect(status().isOk());
     }
 
     @Test
@@ -126,8 +153,58 @@ class UserLoginControllerTest {
         this.mockMvc.perform(get(ApplicationConstants.URLS.ALL_USERS)
                         .accept(MediaType.APPLICATION_JSON)
                         .header(ApplicationConstants.Headers.AUTHORIZATION, jwt))
-                .andDo(print())
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void testGetUser() throws Exception {
+        String jwt = SAMPLE_JWT;
+
+        when(userRegistrationService.getUser(jwt)).thenReturn(userDetailsDto);
+
+        this.mockMvc.perform(get(ApplicationConstants.URLS.GET_USER)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header(ApplicationConstants.Headers.AUTHORIZATION, jwt))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testGetUser_NotFound() throws Exception {
+        String jwt = SAMPLE_JWT;
+
+        when(userRegistrationService.getUser(jwt)).thenThrow(new UserNotFoundException(SAMPLE_UUID));
+
+        this.mockMvc.perform(get(ApplicationConstants.URLS.GET_USER)
+                .accept(MediaType.APPLICATION_JSON)
+                .header(ApplicationConstants.Headers.AUTHORIZATION, jwt)).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testUpdateUser() throws Exception {
+        when(userRegistrationService.updateUser(userDetailsDto)).thenReturn(new UserUpdateResponse(userDetailsDto, UPDATED_USER));
+
+        this.mockMvc.perform(post(ApplicationConstants.URLS.UPDATE_USER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(userDetailsDto)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testUpdateUser_NotVerified() throws Exception {
+        when(userRegistrationService.updateUser(userDetailsDto)).thenThrow(new UserNotVerifiedException());
+
+        this.mockMvc.perform(post(ApplicationConstants.URLS.UPDATE_USER)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(userDetailsDto))).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testUpdateUser_NotFound() throws Exception {
+        when(userRegistrationService.updateUser(userDetailsDto)).thenThrow(new UserNotFoundException(SAMPLE_UUID));
+
+        this.mockMvc.perform(post(ApplicationConstants.URLS.UPDATE_USER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(userDetailsDto)))
+                .andExpect(status().isBadRequest());
+    }
 }

@@ -14,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
@@ -40,6 +41,18 @@ class UserRepositoryTest {
         userRepository.updateAuthenticatedByUserId(userTb.getUserId(), true);
         Optional<UserTb> userTbOptional = userRepository.findById(userTb.getUserId());
         userTbOptional.ifPresent(tb -> assertTrue(tb.getIsAuthenticated()));
+    }
+
+    @Test
+    void testUpdateUserByUserId() {
+        userRepository.updateUserByUserId(userTb.getUserId(),
+                userTb.getName().getFirstName(),
+                "Dan",
+                userTb.getName().getLastName(),
+                userTb.getMobileNumber().getPhoneNumber(),
+                userTb.getMobileNumber().getCountryCode());
+        Optional<UserTb> userTbOptional = userRepository.findById(userTb.getUserId());
+        userTbOptional.ifPresent(user -> assertEquals(user.getName().getMiddleName(), "Dan"));
     }
 
     @AfterEach

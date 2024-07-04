@@ -1,8 +1,10 @@
 package com.codeCracker.userservice.globalExceptions;
 
+import com.codeCracker.userservice.constants.ErrorConstants;
 import com.codeCracker.userservice.dto.model.ShopWiseDefaultError;
 import com.codeCracker.userservice.exceptions.InvalidOtpException;
 import com.codeCracker.userservice.exceptions.UserNotFoundException;
+import com.codeCracker.userservice.exceptions.UserNotVerifiedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -23,7 +25,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ShopWiseDefaultError> handleValidationExceptions(MethodArgumentNotValidException ex) {
-
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
@@ -60,6 +61,15 @@ public class GlobalExceptionHandler {
         defaultError.setErrorCode(INVALID_OTP);
         defaultError.setSource("otp");
         defaultError.setReasonCode(INVALID_INPUT_VALUE);
+        return new ResponseEntity<>(defaultError, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(UserNotVerifiedException.class)
+    public ResponseEntity<ShopWiseDefaultError> userNotVerifiedException(UserNotVerifiedException userNotVerifiedException) {
+        defaultError.setErrorCode(USER_NOT_VERIFIED);
+        defaultError.setDescription(ErrorConstants.Description.USER_NOT_VERIFIED);
+        defaultError.setSource("userId");
+        defaultError.setReasonCode(ErrorConstants.ReasonCodes.UNAUTHORIZED);
         return new ResponseEntity<>(defaultError, HttpStatus.BAD_REQUEST);
     }
 }

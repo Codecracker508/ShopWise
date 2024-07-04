@@ -5,17 +5,17 @@ import com.codeCracker.userservice.dto.model.UserDetailsDto;
 import com.codeCracker.userservice.dto.request.CreateUser;
 import com.codeCracker.userservice.dto.request.VerifyUser;
 import com.codeCracker.userservice.dto.response.UserRegistration;
+import com.codeCracker.userservice.dto.response.UserUpdateResponse;
 import com.codeCracker.userservice.dto.response.UserVerification;
+import com.codeCracker.userservice.exceptions.UserNotFoundException;
+import com.codeCracker.userservice.exceptions.UserNotVerifiedException;
 import com.codeCracker.userservice.service.UserRegistrationService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -43,5 +43,19 @@ public class UserLoginController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<UserDetailsDto>> getAllUsers() {
         return new ResponseEntity<>(userRegistrationService.getAllUsers(), HttpStatus.OK);
+    }
+
+    @GetMapping(value = ApplicationConstants.URLS.GET_USER,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<UserDetailsDto> getUser(@RequestHeader(ApplicationConstants.Headers.AUTHORIZATION)
+                                                  String authorization) throws UserNotFoundException {
+        return new ResponseEntity<>(userRegistrationService.getUser(authorization), HttpStatus.OK);
+    }
+
+    @PostMapping(value = ApplicationConstants.URLS.UPDATE_USER,
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<UserUpdateResponse> updateUser(@RequestBody UserDetailsDto userDetailsDto) throws UserNotFoundException, UserNotVerifiedException {
+        return new ResponseEntity<>(userRegistrationService.updateUser(userDetailsDto), HttpStatus.OK);
     }
 }

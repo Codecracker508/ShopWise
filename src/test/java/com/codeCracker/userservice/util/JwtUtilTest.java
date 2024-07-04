@@ -55,8 +55,7 @@ public class JwtUtilTest {
 
     @Test
     public void testValidateToken() {
-        String username = SAMPLE_UUID;
-        UserDetails userDetails = new User(username, "", new ArrayList<>());
+        UserDetails userDetails = new User(SAMPLE_UUID, "", new ArrayList<>());
         String token = jwtUtil.generateToken(userDetails);
 
         assertTrue(jwtUtil.validateToken(token, userDetails));
