@@ -4,12 +4,12 @@ spring:
   application:
     name: user-service
   config:
-    import: optional:configserver:https://nodal-formula-425110-h7.uc.r.appspot.com
+    import: optional:configserver:http://localhost:8888
   jpa:
     defer-datasource-initialization: true
 eureka:
   client:
     serviceUrl:
-      defaultZone: https://naming-server.el.r.appspot.com/eureka
+      defaultZone: http://localhost:8761/eureka
   instance:
     prefer-ip-address: true
