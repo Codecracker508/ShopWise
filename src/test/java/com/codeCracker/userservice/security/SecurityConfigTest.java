@@ -2,7 +2,6 @@ package com.codeCracker.userservice.security;
 
 import com.codeCracker.userservice.components.CustomAuthenticationEntryPoint;
 import com.codeCracker.userservice.constants.ApplicationConstants;
-import com.codeCracker.userservice.util.JwtRequestFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -14,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static com.codeCracker.userservice.constants.ApplicationConstants.Headers.INTERNAL_REQUEST;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -25,13 +25,10 @@ public class SecurityConfigTest {
     private MockMvc mockMvc;
 
     @Mock
-    private JwtRequestFilter jwtRequestFilter;
+    private HeaderValidationFilter headerValidationFilter;
 
     @Mock
     private CustomAuthenticationEntryPoint authenticationEntryPoint;
-
-    @InjectMocks
-    private SecurityConfig securityConfig;
 
     @BeforeEach
     public void setUp() {
@@ -40,14 +37,15 @@ public class SecurityConfigTest {
 
     @Test
     public void testWhitelistedUrls() throws Exception {
-        mockMvc.perform(get("/swagger-ui/index.html"))
+        mockMvc.perform(get("/swagger-ui/index.html")
+                        .header(INTERNAL_REQUEST,true))
                 .andExpect(status().isOk());
     }
 
     @Test
     @WithMockUser
     public void testAuthenticatedUrl() throws Exception {
-        mockMvc.perform(get(ApplicationConstants.URLS.ALL_USERS))
+        mockMvc.perform(get(ApplicationConstants.URLS.ALL_USERS).header(INTERNAL_REQUEST,true))
                 .andExpect(status().isOk());
     }
 

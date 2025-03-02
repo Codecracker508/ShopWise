@@ -17,6 +17,6 @@ public class CreateUser {
     private Name name;
 
     @Valid
-    @Schema(name = "phone", description = "User mobile number", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(name = "mobile", description = "User mobile number", requiredMode = Schema.RequiredMode.REQUIRED)
     private MobileNumber mobile;
 }
