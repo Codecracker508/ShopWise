@@ -13,16 +13,11 @@ import com.codeCracker.userservice.exceptions.InvalidOtpException;
 import com.codeCracker.userservice.exceptions.UserNotFoundException;
 import com.codeCracker.userservice.exceptions.UserNotVerifiedException;
 import com.codeCracker.userservice.repo.UserRepository;
-import com.codeCracker.userservice.service.UserAuthService;
 import com.codeCracker.userservice.service.UserRegistrationService;
 import com.codeCracker.userservice.util.JwtUtil;
 import com.codeCracker.userservice.util.OTPGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -46,13 +41,7 @@ public class UserRegistrationServiceImpl implements UserRegistrationService {
     private JwtUtil jwtUtil;
 
     @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
     private OTPGenerator otpGenerator;
-
-    @Autowired
-    private UserAuthService userAuthService;
 
     @Override
     public UserRegistration userRegistration(CreateUser createUser) {
@@ -144,13 +133,9 @@ public class UserRegistrationServiceImpl implements UserRegistrationService {
     }
 
     public String createAuthenticationToken(VerifyUser verifyUser) throws Exception {
-        try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(verifyUser.getUserId(), DEFAULT_PASSWORD));
-        } catch (BadCredentialsException e) {
-            throw new BadCredentialsException("Incorrect username or password", e);
-        }
-        final UserDetails userDetails = userAuthService.loadUserByUsername(verifyUser.getUserId());
-        return jwtUtil.generateToken(userDetails);
+        UserDetailsDto userDetailsDto = new UserDetailsDto();
+        userDetailsDto.setUserId(verifyUser.getUserId());
+        return jwtUtil.generateToken(userDetailsDto);
     }
 
     private UUID getUserId(String authorisation) {

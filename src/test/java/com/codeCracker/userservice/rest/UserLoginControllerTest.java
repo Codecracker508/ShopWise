@@ -1,6 +1,5 @@
 package com.codeCracker.userservice.rest;
 
-import com.codeCracker.userservice.components.CustomAuthenticationEntryPoint;
 import com.codeCracker.userservice.constants.ApplicationConstants;
 import com.codeCracker.userservice.dto.model.MobileNumber;
 import com.codeCracker.userservice.dto.model.Name;
@@ -13,8 +12,6 @@ import com.codeCracker.userservice.dto.response.UserVerification;
 import com.codeCracker.userservice.exceptions.UserNotFoundException;
 import com.codeCracker.userservice.exceptions.UserNotVerifiedException;
 import com.codeCracker.userservice.globalExceptions.GlobalExceptionHandler;
-import com.codeCracker.userservice.security.HeaderValidationFilter;
-import com.codeCracker.userservice.service.UserAuthService;
 import com.codeCracker.userservice.service.UserRegistrationService;
 import com.codeCracker.userservice.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,7 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(UserLoginController.class)
-@ContextConfiguration(classes = {UserLoginController.class, CustomAuthenticationEntryPoint.class, GlobalExceptionHandler.class})
+@ContextConfiguration(classes = {UserLoginController.class, GlobalExceptionHandler.class})
 class UserLoginControllerTest {
 
     VerifyUser verifyUser;
@@ -65,11 +62,7 @@ class UserLoginControllerTest {
     @MockBean
     private UserRegistrationService userRegistrationService;
     @MockBean
-    private UserAuthService userAuthService;
-    @MockBean
     private JwtUtil jwtUtil;
-    @MockBean
-    private HeaderValidationFilter headerValidationFilter;
     @InjectMocks
     private UserLoginController userLoginController;
 
@@ -127,7 +120,7 @@ class UserLoginControllerTest {
         when(userRegistrationService.userVerification(verifyUser)).thenReturn(userVerification);
 
         this.mockMvc.perform(post(ApplicationConstants.URLS.VERIFY_USER)
-                        .header(INTERNAL_REQUEST,true)
+                        .header(INTERNAL_REQUEST, true)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(new ObjectMapper().writeValueAsString(verifyUser)))
                 .andExpect(status().isOk());
@@ -140,7 +133,7 @@ class UserLoginControllerTest {
                 .otp("123") // Invalid because OTP is too short
                 .mobile(mobileNumber).build();
         this.mockMvc.perform(post(ApplicationConstants.URLS.VERIFY_USER)
-                .header(INTERNAL_REQUEST,true)
+                .header(INTERNAL_REQUEST, true)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new ObjectMapper().writeValueAsString(invalidVerifyUser))).andExpect(status().isOk());
     }
@@ -153,7 +146,7 @@ class UserLoginControllerTest {
 
         when(userRegistrationService.getAllUsers()).thenReturn(List.of(userDetailsDto));
         this.mockMvc.perform(get(ApplicationConstants.URLS.ALL_USERS)
-                        .header(INTERNAL_REQUEST,true)
+                        .header(INTERNAL_REQUEST, true)
                         .accept(MediaType.APPLICATION_JSON)
                         .header(ApplicationConstants.Headers.AUTHORIZATION, jwt))
                 .andExpect(status().isOk());

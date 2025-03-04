@@ -15,7 +15,6 @@ import com.codeCracker.userservice.exceptions.InvalidOtpException;
 import com.codeCracker.userservice.exceptions.UserNotFoundException;
 import com.codeCracker.userservice.exceptions.UserNotVerifiedException;
 import com.codeCracker.userservice.repo.UserRepository;
-import com.codeCracker.userservice.service.UserAuthService;
 import com.codeCracker.userservice.service.impl.UserRegistrationServiceImpl;
 import com.codeCracker.userservice.util.JwtUtil;
 import com.codeCracker.userservice.util.OTPGenerator;
@@ -49,13 +48,8 @@ class UserRegistrationServiceTest {
     private JwtUtil jwtUtil;
 
     @Mock
-    private AuthenticationManager authenticationManager;
-
-    @Mock
     private OTPGenerator otpGenerator;
 
-    @Mock
-    private UserAuthService userAuthService;
 
     @InjectMocks
     private UserRegistrationServiceImpl userRegistrationService;
@@ -122,8 +116,7 @@ class UserRegistrationServiceTest {
         when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(userTb));
         when(otpGenerator.getCacheOtp(anyString())).thenReturn("123456");
         doNothing().when(otpGenerator).clearOtp(anyString());
-        when(userAuthService.loadUserByUsername(anyString())).thenReturn(mock(UserDetails.class));
-        when(jwtUtil.generateToken(any(UserDetails.class))).thenReturn("token");
+        when(jwtUtil.generateToken(any(UserDetailsDto.class))).thenReturn("token");
 
         UserVerification userVerification = userRegistrationService.userVerification(verifyUser);
 
@@ -216,23 +209,5 @@ class UserRegistrationServiceTest {
         assertThrows(UserNotFoundException.class, () -> {
             userRegistrationService.updateUser(userDetailsDto);
         });
-    }
-
-    @Test
-    void testCreateAuthenticationToken_InvalidCredentials() {
-        VerifyUser verifyUser = VerifyUser.builder()
-                .userId("user-id")
-                .otp("123456")
-                .mobile(null)
-                .build();
-
-        doThrow(new BadCredentialsException("Invalid credentials"))
-                .when(authenticationManager).authenticate(any());
-
-        Exception exception = assertThrows(Exception.class, () -> {
-            userRegistrationService.createAuthenticationToken(verifyUser);
-        });
-
-        assertEquals("Incorrect username or password", exception.getMessage());
     }
 }

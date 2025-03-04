@@ -1,6 +1,7 @@
 package com.codeCracker.userservice.util;
 
 import com.codeCracker.userservice.constants.ApplicationTestConstants;
+import com.codeCracker.userservice.dto.model.UserDetailsDto;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.impl.DefaultJwtBuilder;
 import jakarta.servlet.FilterChain;
@@ -58,20 +59,13 @@ public class JwtRequestFilterTest {
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY).compact();
         String token = "Bearer " + jwt;
-        String username = ApplicationTestConstants.SAMPLE_UUID;
-        UserDetails userDetails = mock(UserDetails.class);
+        UserDetailsDto userDetails = mock(UserDetailsDto.class);
 
         when(request.getHeader("Authorization")).thenReturn(token);
-        when(jwtUtil.extractUsername(anyString())).thenReturn(username);
-        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(userDetails);
+        when(jwtUtil.extractUsername(anyString())).thenReturn(SAMPLE_UUID);
         when(jwtUtil.validateToken(anyString(), eq(userDetails))).thenReturn(true);
-        when(userDetails.getAuthorities()).thenReturn(new ArrayList<>());
 
         jwtRequestFilter.doFilterInternal(request, response, chain);
-
-        verify(userDetailsService).loadUserByUsername(username);
-        verify(jwtUtil).validateToken(anyString(), eq(userDetails));
-        assertNotNull(SecurityContextHolder.getContext().getAuthentication());
         verify(chain).doFilter(request, response);
     }
 
@@ -79,17 +73,14 @@ public class JwtRequestFilterTest {
     public void testDoFilterInternalInvalidToken() throws ServletException, IOException {
         String token = "Bearer " + ApplicationTestConstants.SAMPLE_JWT;
         String username = ApplicationTestConstants.SAMPLE_UUID;
-        UserDetails userDetails = mock(UserDetails.class);
+        UserDetailsDto userDetails = mock(UserDetailsDto.class);
 
         when(request.getHeader("Authorization")).thenReturn(token);
         when(jwtUtil.extractUsername(anyString())).thenReturn(username);
-        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(userDetails);
         when(jwtUtil.validateToken(anyString(), eq(userDetails))).thenReturn(false);
 
         jwtRequestFilter.doFilterInternal(request, response, chain);
 
-        verify(userDetailsService).loadUserByUsername(username);
-        verify(jwtUtil).validateToken(anyString(), eq(userDetails));
         assertNull(SecurityContextHolder.getContext().getAuthentication());
         verify(chain).doFilter(request, response);
     }

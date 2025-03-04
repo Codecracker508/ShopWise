@@ -1,5 +1,8 @@
 package com.codeCracker.userservice.util;
 
+import com.codeCracker.userservice.dto.model.MobileNumber;
+import com.codeCracker.userservice.dto.model.Name;
+import com.codeCracker.userservice.dto.model.UserDetailsDto;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -37,7 +40,9 @@ public class JwtUtilTest {
     @Test
     public void testExtractUsername() {
         String username = SAMPLE_UUID;
-        String token = jwtUtil.generateToken(new User(username, "", new ArrayList<>()));
+        String token = jwtUtil.generateToken(new UserDetailsDto(username,
+                new Name("john", "abraham", "gates"),
+                new MobileNumber("+91", "1234567890")));
 
         String extractedUsername = jwtUtil.extractUsername(token);
         assertEquals(username, extractedUsername);
@@ -45,8 +50,9 @@ public class JwtUtilTest {
 
     @Test
     public void testGenerateToken() {
-        String username = SAMPLE_UUID;
-        UserDetails userDetails = new User(username, "", new ArrayList<>());
+        UserDetailsDto userDetails = new UserDetailsDto(SAMPLE_UUID,
+                new Name("john", "abraham", "gates"),
+                new MobileNumber("+91", "1234567890"));
 
         String token = jwtUtil.generateToken(userDetails);
 
@@ -55,7 +61,9 @@ public class JwtUtilTest {
 
     @Test
     public void testValidateToken() {
-        UserDetails userDetails = new User(SAMPLE_UUID, "", new ArrayList<>());
+        UserDetailsDto userDetails = new UserDetailsDto(SAMPLE_UUID,
+                new Name("john", "abraham", "gates"),
+                new MobileNumber("+91", "1234567890"));
         String token = jwtUtil.generateToken(userDetails);
 
         assertTrue(jwtUtil.validateToken(token, userDetails));
@@ -67,7 +75,9 @@ public class JwtUtilTest {
                 .setExpiration(new Date(System.currentTimeMillis() - 10))
                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY).compact();
 
-        UserDetails userDetails = new User(SAMPLE_UUID, "", new ArrayList<>());
+        UserDetailsDto userDetails = new UserDetailsDto(SAMPLE_UUID,
+                new Name("john", "abraham", "gates"),
+                new MobileNumber("+91", "1234567890"));
         ExpiredJwtException exception = Assertions.assertThrows(
                 ExpiredJwtException.class, () -> jwtUtil.validateToken(jwt, userDetails)
         );
@@ -76,12 +86,13 @@ public class JwtUtilTest {
 
     @Test
     public void testExtractAllClaims() {
-        String username = SAMPLE_UUID;
-        UserDetails userDetails = new User(username, "", new ArrayList<>());
+        UserDetailsDto userDetails = new UserDetailsDto(SAMPLE_UUID,
+                new Name("john", "abraham", "gates"),
+                new MobileNumber("+91", "1234567890"));
         String token = jwtUtil.generateToken(userDetails);
 
         Claims claims = jwtUtil.extractAllClaims(token);
 
-        assertEquals(username, claims.getSubject());
+        assertEquals(SAMPLE_UUID, claims.getSubject());
     }
 }
