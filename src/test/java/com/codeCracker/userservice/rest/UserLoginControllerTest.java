@@ -35,8 +35,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
-import static com.codeCracker.userservice.constants.ApplicationConstants.*;
 import static com.codeCracker.userservice.constants.ApplicationConstants.Headers.INTERNAL_REQUEST;
+import static com.codeCracker.userservice.constants.ApplicationConstants.*;
 import static com.codeCracker.userservice.constants.ApplicationTestConstants.SAMPLE_JWT;
 import static com.codeCracker.userservice.constants.ApplicationTestConstants.SAMPLE_UUID;
 import static org.mockito.Mockito.when;
