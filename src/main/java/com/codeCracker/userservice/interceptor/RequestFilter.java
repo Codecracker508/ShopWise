@@ -19,6 +19,7 @@ import static com.codeCracker.userservice.constants.ApplicationConstants.Headers
 
 @Component
 @Slf4j
+@SuppressWarnings("all")
 public class RequestFilter extends OncePerRequestFilter {
     private final ShopWiseDefaultError defaultError = new ShopWiseDefaultError();
     private final ObjectMapper objectMapper = new ObjectMapper();
