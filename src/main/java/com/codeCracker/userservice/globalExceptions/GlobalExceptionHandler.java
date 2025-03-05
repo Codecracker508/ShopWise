@@ -3,8 +3,10 @@ package com.codeCracker.userservice.globalExceptions;
 import com.codeCracker.userservice.constants.ErrorConstants;
 import com.codeCracker.userservice.dto.model.ShopWiseDefaultError;
 import com.codeCracker.userservice.exceptions.InvalidOtpException;
+import com.codeCracker.userservice.exceptions.UnauthorizedRequestException;
 import com.codeCracker.userservice.exceptions.UserNotFoundException;
 import com.codeCracker.userservice.exceptions.UserNotVerifiedException;
+import jakarta.ws.rs.NotAuthorizedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -71,5 +73,14 @@ public class GlobalExceptionHandler {
         defaultError.setSource("userId");
         defaultError.setReasonCode(ErrorConstants.ReasonCodes.UNAUTHORIZED);
         return new ResponseEntity<>(defaultError, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(UnauthorizedRequestException.class)
+    public ResponseEntity<ShopWiseDefaultError> unauthorizedApiCall(UnauthorizedRequestException notAuthorizedException) {
+        defaultError.setErrorCode(UNAUTHORIZED);
+        defaultError.setDescription(notAuthorizedException.getLocalizedMessage());
+        defaultError.setSource("header");
+        defaultError.setReasonCode(ErrorConstants.ReasonCodes.UNAUTHORIZED);
+        return new ResponseEntity<>(defaultError,HttpStatus.UNAUTHORIZED);
     }
 }

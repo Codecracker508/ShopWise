@@ -7,6 +7,7 @@ public interface ErrorConstants {
         String USER_NOT_FOUND_ERROR = "100002";
         String INVALID_OTP = "100003";
         String USER_NOT_VERIFIED = "100004";
+        String UNAUTHORIZED = "100005";
     }
 
     interface ReasonCodes {
